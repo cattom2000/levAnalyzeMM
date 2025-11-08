@@ -1,50 +1,148 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
 
-## Core Principles
+Version Change: None (initial creation) → 1.0.0
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+Modified Principles:
+- Added: 五个全新核心原则专为金融分析项目设计
+  1. 数据驱动分析 - 多数据源交叉验证
+  2. 风险检测与预警机制 - 主动风险识别
+  3. 跨指标关联分析 - 相关性和因果关系分析
+  4. 基于证据的投资洞察 - 量化分析支持
+  5. 持续监控与迭代优化 - 持续改进机制
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Added Sections:
+- 核心原则 (5个原则，涵盖数据、风险、关联、洞察、监控)
+- 额外约束 (技术约束、合规要求、可视化标准)
+- 开发流程 (研究阶段、开发阶段、验证阶段)
+- 治理规则 (修订程序、版本控制策略)
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Removed Sections:
+- 无
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Templates Status:
+✅ .specify/templates/plan-template.md - 无需更新，Constitution Check部分已通用
+✅ .specify/templates/spec-template.md - 无需更新，模板结构与章程兼容
+✅ .specify/templates/tasks-template.md - 无需更新，任务分类与章程原则一致
+✅ .claude/commands/speckit.constitution.md - 无需更新，命令流程与模板兼容
+✅ .claude/commands/speckit.plan.md - 无需更新，已包含Constitution Check机制
+✅ .claude/commands/speckit.specify.md - 无需更新，规格模板与章程一致
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Follow-up TODOs:
+- 无
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+验证结果:
+- ✅ 无剩余括号占位符
+- ✅ 版本行与报告匹配 (1.0.0)
+- ✅ 日期格式正确 (ISO YYYY-MM-DD: 2025-11-08)
+- ✅ 原则声明性、可测试、无模糊语言
+-->
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+# 融资余额市场分析项目章程
+<!-- Margin Debt Market Analysis Project Constitution -->
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## 核心原则
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### 一、数据驱动分析
+所有分析结论必须基于可验证的历史数据和实时数据源。系统必须实现多数据源交叉验证，包括但不限于：
+- 融资余额数据（Margin Debt）
+- 标普500指数（S&P 500）
+- 利率数据（联邦基金利率、10年期国债收益率）
+- M2货币供应量
+- VIX波动率指数
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+分析结果需包含数据来源、时间范围、统计方法和置信区间。严禁基于假设或非量化指标进行投资建议。
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### 二、风险检测与预警机制
+系统必须主动识别和预警市场风险信号，包括：
+- 融资余额同比增长率超过15%时的市场过热预警
+- 融资余额与S&P 500比率超过0.15时的潜在泡沫风险
+- VIX指数超过30时的市场恐慌期识别
+- M2增长率急剧变化时的影响评估
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+预警机制需设置多级风险等级（低/中/高/极高），并提供明确的行动建议。所有预警必须附带历史相似情况下的市场表现数据。
+
+### 三、跨指标关联分析
+系统必须揭示各市场指标之间的相关性和因果关系：
+- 计算并展示融资余额与S&P 500的皮尔逊相关系数
+- 分析利率变化对融资余额的滞后影响（1-6个月）
+- 评估M2货币供应量与市场流动性的关系
+- 量化VIX波动率对投资者情绪的指示作用
+
+关联分析需包含时间序列分析、回归分析和 Granger 因果关系检验。所有相关性分析必须通过统计显著性检验（p值 < 0.05）。
+
+### 四、基于证据的投资洞察
+所有投资建议必须严格基于量化分析结果：
+- 投资机会识别必须有统计学支持（如置信度 > 80%）
+- 风险信号必须基于历史回测验证（至少覆盖10年数据）
+- 市场周期判断需要多个指标共振确认
+- 建议的时效性必须有明确的退出策略
+
+投资洞察需区分短期（1-3个月）、中期（3-12个月）和长期（1-3年）视角，并提供相应的策略建议。
+
+### 五、持续监控与迭代优化
+系统必须建立持续监控机制：
+- 每日更新关键指标数据
+- 每周生成市场风险评估报告
+- 每月进行模型精度验证和优化
+- 每季度进行全系统回顾和参数调整
+
+模型优化需基于实际市场表现反馈，包括预测准确率、预警及时性等指标。重大模型更新需保存历史版本以支持回测对比。
+
+## 额外约束
+
+### 技术约束
+- 所有数据处理脚本必须支持批处理模式
+- 分析结果需支持CSV、JSON、Excel格式导出
+- 核心算法必须有完整的单元测试覆盖（覆盖率 > 80%）
+- 大数据量处理（> 1GB）时性能需满足：单次分析 < 10秒
+
+### 合规要求
+- 所有金融数据使用需符合数据供应商的许可协议
+- 分析结果必须包含免责声明：不构成投资建议
+- 数据存储需符合金融数据保护标准
+- 用户访问日志需保留至少90天
+
+### 可视化标准
+- 图表必须清晰标注数据来源和时间范围
+- 风险预警使用标准化颜色系统：绿色（低风险）、黄色（中风险）、橙色（高风险）、红色（极高风险）
+- 所有趋势分析需包含置信区间阴影区域
+- 交互式图表需支持缩放和历史数据点查看
+
+## 开发流程
+
+### 研究阶段
+- 数据源调研：验证至少3个独立数据源的可信度
+- 历史数据回测：使用至少10年历史数据验证模型有效性
+- 基准测试：与现有市场指标（如CAPE比率、恐慌贪婪指数）进行对比
+- 范围界定：明确分析的时间框架和频率
+
+### 开发阶段
+- 原型验证：每个核心功能必须有可运行原型
+- 数据质量检查：实施自动化数据验证流程
+- 性能优化：关键路径分析耗时 < 100ms
+- 用户界面：提供直观的数据可视化和交互体验
+
+### 验证阶段
+- 回测验证：历史数据回测准确率 > 70%
+- 压力测试：模拟极端市场条件下的系统表现
+- 同行评审：关键算法需经独立技术评审
+- 用户验收：至少3轮用户测试和反馈迭代
+
+## 治理规则
+
+章程修订必须遵循以下程序：
+1. 提出修订建议并说明理由
+2. 评估修订对现有系统的影响
+3. 制定详细的实施计划和时间表
+4. 获得项目核心团队一致同意
+5. 更新版本号并记录变更历史
+
+版本控制策略：
+- 主版本号（X.0.0）：重大架构变更或核心原则修改
+- 次版本号（1.X.0）：新增功能或重要流程优化
+- 修订版本号（1.0.X）：文档修正、错误修复、细微改进
+
+所有变更必须保持向后兼容性，除非是破坏性变更。破坏性变更需要提供详细的迁移指南和过渡期安排。
+
+**版本**: 1.0.0 | **批准日期**: 2025-11-08 | **最后修订**: 2025-11-08

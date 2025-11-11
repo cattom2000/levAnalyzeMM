@@ -187,7 +187,6 @@ $RECYCLE.BIN/
 
 # Data files and caches
 #  Financial data files
-*.csv
 *.xlsx
 *.xls
 *.json

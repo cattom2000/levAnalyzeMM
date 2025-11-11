@@ -9,6 +9,12 @@
 
 本项目构建一个基于Streamlit的融资余额市场分析系统，通过多数据源集成和高级可视化，识别市场风险信号和投资机会。系统核心为**脆弱性指数**（杠杆Z分数 - VIX Z分数），配合Part1和Part2共6个核心指标，实现从1997年至2025年的市场数据分析和历史危机时期对比。
 
+**新增内容**:
+- 用户提供数据源：`datas/margin-statistics.csv` (FINRA融资余额数据，1997-01至2025-09)
+- 脆弱性指数算法详细文档：`docs/sig_Bubbles.md`
+- 计算方法说明：`docs/calMethod.md` 和图表展示说明：`docs/tableElements.md`
+- 数据源说明：`docs/dataSourceExplain.md`
+
 **技术方法**:
 - Python + Streamlit构建Web应用
 - Pandas进行数据处理和分析
@@ -20,13 +26,15 @@
 
 **语言/版本**: Python 3.11+
 **主要依赖**: Streamlit, Pandas, Plotly, yfinance, fredapi
-**存储**: CSV文件存储 - `datas/complete_market_analysis_monthly.csv` (主数据文件), `datas/margin-statistics.csv` (FINRA特殊数据)
+**存储**:
+- `datas/margin-statistics.csv` - FINRA融资余额数据（用户提供，1997-01至2025-09）
+- `datas/complete_market_analysis_monthly.csv` - 完整市场分析数据（计算生成）
 **测试**: pytest (单元测试), Streamlit测试框架
 **目标平台**: Linux服务器，Web浏览器访问
 **项目类型**: 单体Web应用
 **性能目标**: 页面加载 < 30秒, 图表交互响应 < 2秒, 单次分析 < 10秒
 **约束条件**: 数据覆盖率 Part1 ≥95%, Part2 ≥95%, 核心算法测试覆盖率 > 80%
-**规模/范围**: 处理25+年历史数据，月度频率，6个核心指标，3个历史危机时期
+**规模/范围**: 处理25+年历史数据，月度频率，6个核心指标，4个历史危机时期（2000-2002互联网泡沫、2007-2009金融危机、2020-2022疫情、2021-2022高通胀）
 
 ## 章程检查
 
@@ -114,11 +122,20 @@ datas/
 
 # 文档
 docs/
-├── sig_Bubbles.md          # 脆弱性指数Z-score计算方法
-└── api_reference.md        # API参考文档
+├── sig_Bubbles.md          # 脆弱性指数Z-score计算方法 (算法参考)
+├── calMethod.md            # 核心计算指标计算方法
+├── tableElements.md        # 图表展示说明 (6个核心指标)
+└── dataSourceExplain.md    # 数据源说明 (VIX获取、FINRA数据字段)
+
 ```
 
 **结构决策**: 单体Web应用结构，数据处理逻辑与Streamlit UI分离，模块化设计便于测试和维护。选择了"Option 1: Single project"结构，因为这是一个纯前端分析工具，不需要分离的后端API或移动端。
+
+**文档参考**:
+- 核心算法: `docs/sig_Bubbles.md` (脆弱性指数计算方法)
+- 计算逻辑: `docs/calMethod.md` (Part1 & Part2指标计算公式)
+- 可视化设计: `docs/tableElements.md` (6个核心图表展示方式)
+- 数据源处理: `docs/dataSourceExplain.md` (FINRA数据字段说明 & VIX数据获取)
 
 ## 复杂度跟踪
 
@@ -141,8 +158,10 @@ docs/
 - 需要研究: 大数据量(1997-2025)处理的性能优化策略
 
 **数据模型研究**:
-- 需要研究: `datas/margin-statistics.csv`文件格式和FINRA数据处理
-- 需要研究: Z-score计算的统计方法 (参考 `docs/sig_Bubbles.md`)
+- ✅ 已提供: `datas/margin-statistics.csv`文件格式 (Year-Month, D, CC, CM三字段)
+- ✅ 已提供: Z-score计算的统计方法 (参考 `docs/sig_Bubbles.md`)
+- ✅ 已提供: 计算方法说明 (`docs/calMethod.md`) 和图表展示 (`docs/tableElements.md`)
+- ✅ 已提供: 数据源说明 (`docs/dataSourceExplain.md`)
 - 需要研究: 多数据源同步和对齐的挑战
 
 **集成模式研究**:
@@ -176,60 +195,82 @@ docs/
 
 ### 数据模型设计 (data-model.md)
 
-**主数据实体**:
-- **月度市场数据** (1997-01至2025-09, 345条记录)
-  - 日期 (YYYY-MM-DD)
-  - S&P500指数 (数值)
-  - S&P500总市值 (数值)
-  - VIX指数 (数值)
-  - M2货币供应量 (数值)
-  - 联邦基金利率 (百分比)
-  - 10年期国债收益率 (百分比)
-  - 融资余额Margin Debt (数值)
+**主数据实体** (参考 `docs/dataSourceExplain.md`):
+- **FINRA融资余额数据** (1997-01至2025-09)
+  - Year-Month: 年月
+  - D (Debit Balances): 客户保证金账户借方余额（融资余额）
+  - CC (Cash Credit): 客户现金账户贷方余额
+  - CM (Margin Credit): 客户保证金账户贷方余额
+
+- **外部数据源**
+  - VIX指数: CBOE (月度平均从日度数据转换)
+  - S&P500指数和总市值: Yahoo Finance/FRED
+  - M2货币供应量: FRED
+  - 联邦基金利率: FRED
+  - Wilshire 5000: FRED (用于杠杆标准化)
 
 - **计算指标 (Part1 - 1997-01开始)**
-  - 市场杠杆率 (Margin Debt / S&P500总市值)
-  - 货币供应比率 (Margin Debt / M2)
-  - 利率成本分析 (Margin Debt vs 利率关系)
+  - 市场杠杆率: Margin Debt / S&P500总市值
+  - 货币供应比率: Margin Debt / M2
+  - 利率成本分析: Margin Debt vs 利率关系
 
 - **计算指标 (Part2 - 2010-02开始)**
-  - 杠杆变化率 (年同比YoY%)
-  - 投资者净资产 (计算公式)
-  - 脆弱性指数 (杠杆Z分数 - VIX Z分数) ⭐
+  - 杠杆净值: `Leverage_Net = D - (CC + CM)`
+  - 杠杆变化率: 月度环比和年度同比变化率
+  - 投资者净资产: Leverage_Net
+  - 脆弱性指数: 杠杆Z分数 - VIX Z分数 (⭐核心指标)
+  - 杠杆标准化: `Leverage_Normalized = Leverage_Net / Stock_Market_Cap`
+
+- **Z-Score标准化**
+  - Leverage_Z: 252天滚动窗口标准化
+  - VIX_Z: 252天滚动窗口标准化
+  - 脆弱性指数: `Vulnerability = Leverage_Z - VIX_Z`
 
 - **元数据**
   - 数据源标注
   - 计算时间戳
   - 数据质量标记
+  - 风险等级分类 (低/中/高/极高)
 
 ### API合同 (contracts/)
 
-**data_fetcher.py**
-- `fetch_market_data(start_date: str, end_date: str) -> pd.DataFrame`
-- `fetch_fred_data(series_id: str, start_date: str, end_date: str) -> pd.Series`
-- `fetch_yahoo_data(symbol: str, start_date: str, end_date: str) -> pd.DataFrame`
-- `load_finra_data() -> pd.DataFrame`
+**data_fetcher.py** (参考 `docs/dataSourceExplain.md`)
+- `load_finra_data() -> pd.DataFrame`: 加载 `datas/margin-statistics.csv` (D, CC, CM字段)
+- `fetch_vix_data(start_date: str, end_date: str) -> pd.Series`: 从CBOE获取VIX数据
+- `fetch_market_cap_data(start_date: str, end_date: str) -> pd.Series`: 获取S&P500/Wilshire 5000数据
+- `fetch_fred_data(series_id: str, start_date: str, end_date: str) -> pd.Series`: 获取M2、利率数据
+- `sync_data_sources(finra_df: pd.DataFrame) -> pd.DataFrame`: 同步多数据源
 
-**margin_debt_calculator.py**
-- `calculate_market_leverage(df: pd.DataFrame) -> pd.Series`
-- `calculate_money_supply_ratio(df: pd.DataFrame) -> pd.Series`
-- `calculate_leverage_change_rate(df: pd.DataFrame) -> pd.Series`
-- `calculate_investor_net_worth(df: pd.DataFrame) -> pd.Series`
+**margin_debt_calculator.py** (参考 `docs/calMethod.md`)
+- `calculate_leverage_net(df: pd.DataFrame) -> pd.Series`: 计算 `Leverage_Net = D - (CC + CM)`
+- `calculate_leverage_change_rate(df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]`: 月度和年度变化率
+- `calculate_market_leverage(df: pd.DataFrame) -> pd.Series`: 市场杠杆率 (Margin Debt / S&P500总市值)
+- `calculate_money_supply_ratio(df: pd.DataFrame) -> pd.Series`: 货币供应比率 (Margin Debt / M2)
+- `calculate_investor_net_worth(df: pd.DataFrame) -> pd.Series`: 投资者净资产
+- `calculate_mkt_return(df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]`: 月度和年度市场回报率
 
-**vulnerability_index.py**
-- `calculate_zscore(series: pd.Series, window: int = 252) -> pd.Series`
-- `calculate_vulnerability_index(leverage_zscore: pd.Series, vix_zscore: pd.Series) -> pd.Series`
-- `validate_vulnerability_calculation(df: pd.DataFrame) -> bool`
+**vulnerability_index.py** (⭐核心模块，参考 `docs/sig_Bubbles.md`)
+- `calculate_zscore(series: pd.Series, window: int = 252) -> pd.Series`: Z-Score标准化
+- `calculate_leverage_zscore(df: pd.DataFrame) -> pd.Series`: 杠杆Z分数
+- `calculate_vix_zscore(vix_series: pd.Series, window: int = 252) -> pd.Series`: VIX Z分数
+- `calculate_vulnerability_index(leverage_zscore: pd.Series, vix_zscore: pd.Series) -> pd.Series`: 核心公式
+- `classify_risk_level(vulnerability_index: pd.Series) -> pd.Series`: 风险等级 (>3高风险, <-3低风险)
+- `validate_vulnerability_calculation(df: pd.DataFrame) -> bool`: 算法验证
 
 **risk_analyzer.py**
-- `identify_risk_signals(df: pd.DataFrame) -> pd.DataFrame`
-- `classify_risk_level(vulnerability_index: pd.Series) -> pd.Series`
+- `detect_bubble_signals(vulnerability_index: pd.Series) -> pd.Series`: 泡沫信号检测 (Vulnerability > 3)
+- `classify_market_regime(df: pd.DataFrame) -> pd.Series`: 市场状态分类
 - `generate_investment_insights(df: pd.DataFrame, confidence_threshold: float = 0.8) -> dict`
+- `analyze_historical_crises(df: pd.DataFrame) -> dict`: 分析4个历史危机时期
 
-**visualization.py**
-- `create_multi_indicator_dashboard(df: pd.DataFrame) -> dict`
-- `create_vulnerability_index_chart(df: pd.DataFrame, date_range: tuple) -> plotly.graph_objects.Figure`
-- `highlight_historical_crises(fig: plotly.graph_objects.Figure, crisis_periods: list) -> plotly.graph_objects.Figure`
+**visualization.py** (参考 `docs/tableElements.md` - 6个核心图表)
+- `create_market_leverage_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 双Y轴图表 (市场杠杆率 & S&P500)
+- `create_money_supply_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: Margin Debt / M2 比率
+- `create_interest_cost_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 利率成本分析
+- `create_leverage_change_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 杠杆变化率对比
+- `create_investor_net_worth_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 投资者净资产
+- `create_vulnerability_index_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 脆弱性指数图表
+- `highlight_historical_crises(fig: plotly.graph_objects.Figure) -> plotly.graph_objects.Figure`: 标记4个历史危机时期
 
 ### 快速开始指南 (quickstart.md)
 
@@ -250,11 +291,17 @@ pip install -r requirements.txt
 
 **数据准备**
 ```bash
-# 准备FINRA数据
-cp datas/margin-statistics.csv src/data/
+# 验证数据文件 (已提供)
+ls -la datas/margin-statistics.csv
+head -5 datas/margin-statistics.csv
 
-# 验证数据文件
-python -c "from src.data.fetcher import load_finra_data; print('FINRA数据加载成功')"
+# 验证数据源文档
+cat docs/dataSourceExplain.md
+cat docs/calMethod.md
+cat docs/tableElements.md
+
+# 验证脆弱性指数算法
+cat docs/sig_Bubbles.md
 ```
 
 **运行应用**
@@ -285,8 +332,13 @@ streamlit run app.py
 
 ### 核心算法决策
 - **Z-score窗口**: 252个交易日 (1年) 平衡稳定性与响应性
-- **脆弱性指数公式**: 杠杆Z分数 - VIX Z分数，标准化后可直接比较
-- **风险等级**: 四级分类，匹配业界标准
+- **脆弱性指数公式**: `Vulnerability = Leverage_Z - VIX_Z` (参考 `docs/sig_Bubbles.md`)
+- **风险等级**:
+  - Vulnerability > 3: 高风险 (泡沫/自满)
+  - Vulnerability < -3: 低风险 (恐慌/去杠杆)
+  - -1 ~ +1: 中性 (正常市场)
+- **杠杆净值计算**: `Leverage_Net = D - (CC + CM)` (参考 `docs/calMethod.md`)
+- **杠杆标准化**: `Leverage_Normalized = Leverage_Net / Stock_Market_Cap`
 
 ---
 

@@ -1,12 +1,19 @@
 # 数据模型: 融资余额市场分析系统
 
-**版本**: 1.0.0
-**日期**: 2025-11-08
+**版本**: 1.0.1 (根据用户提供的文档更新)
+**日期**: 2025-11-11
 **分支**: 001-margin-debt-analysis
 
 ## 概述
 
 本文档定义 `datas/complete_market_analysis_monthly.csv` 的完整数据模型，包含所有原始市场数据、计算指标和元数据信息。数据模型支持Part1指标（1997-01开始）和Part2指标（2010-02开始）的差异化覆盖要求。
+
+**数据源文件**:
+- `datas/margin-statistics.csv` - FINRA融资余额数据 (用户提供，1997-01至2025-09)
+- `docs/dataSourceExplain.md` - 数据源详细说明
+- `docs/sig_Bubbles.md` - 脆弱性指数算法
+- `docs/calMethod.md` - 核心计算指标方法
+- `docs/tableElements.md` - 图表展示规范
 
 ## 主数据文件
 
@@ -25,18 +32,24 @@
 |--------|------|------|------|--------|--------|
 | `date` | DATE | YYYY-MM-DD | 月度日期标识 | - | 全时段 |
 | `sp500_index` | FLOAT | 十进制数 | S&P 500指数收盘价 | Yahoo Finance | 1997-01起 |
-| `sp500_market_cap` | FLOAT | 十进制数 | S&P 500总市值 (万亿美元) | Yahoo Finance | 1997-01起 |
-| `vix_index` | FLOAT | 十进制数 | VIX波动率指数 | CBOE/Yahoo Finance | 1997-01起 |
+| `sp500_market_cap` | FLOAT | 十进制数 | Wilshire 5000总市值 (万亿美元) | FRED | 1997-01起 |
+| `vix_index` | FLOAT | 十进制数 | VIX波动率指数 (月度均值) | CBOE | 1997-01起 |
 | `m2_money_supply` | FLOAT | 十进制数 | M2货币供应量 (万亿美元) | FRED | 1997-01起 |
 | `federal_funds_rate` | FLOAT | 百分比 | 联邦基金利率 (%) | FRED | 1997-01起 |
 | `treasury_10y_rate` | FLOAT | 百分比 | 10年期国债收益率 (%) | FRED | 1997-01起 |
-| `margin_debt` | FLOAT | 十进制数 | 融资余额 (万亿美元) | FINRA | 1997-01起 |
+| `finra_D` | FLOAT | 十进制数 | 客户保证金账户借方余额 (万亿美元) | FINRA (margin-statistics.csv) | 1997-01起 |
+| `finra_CC` | FLOAT | 十进制数 | 客户现金账户贷方余额 (万亿美元) | FINRA (margin-statistics.csv) | 1997-01起 |
+| `finra_CM` | FLOAT | 十进制数 | 客户保证金账户贷方余额 (万亿美元) | FINRA (margin-statistics.csv) | 1997-01起 |
+| `margin_debt` | FLOAT | 十进制数 | 融资余额 (万亿美元) (alias for finra_D) | FINRA | 1997-01起 |
 
 **数据质量要求**:
 - 所有数值字段不允许为NULL
 - 百分比字段范围: -10% 到 50%
 - 指数和市值字段必须 > 0
 - 日期字段格式严格校验
+- FINRA三字段 (D, CC, CM) 必须 ≥ 0
+- 杠杆净值 (Leverage_Net) 可正可负，但应有合理范围
+- VIX指数月度均值应基于日度数据计算 (参考 `docs/dataSourceExplain.md`)
 
 ### 2. Part1 计算指标 (1997-01开始，≥95%覆盖率)
 
@@ -62,35 +75,68 @@
 
 | 字段名 | 类型 | 公式 | 描述 | 精度 |
 |--------|------|------|------|------|
-| `leverage_yoy_change` | FLOAT | (margin_debt_t - margin_debt_t12) / margin_debt_t12 * 100 | 杠杆变化率(YoY%) | 2位小数 |
-| `investor_net_worth` | FLOAT | 计算得出 | 投资者净资产 | 2位小数 |
-| `vulnerability_index` | FLOAT | leverage_zscore - vix_zscore | **脆弱性指数** (最核心) | 3位小数 |
+| `leverage_net` | FLOAT | D - (CC + CM) | 杠杆净值 | 2位小数 |
+| `leverage_change_mom` | FLOAT | 月度变化率 | 杠杆净值月度环比变化率 | 2位小数 |
+| `leverage_change_yoy` | FLOAT | 年度变化率 | 杠杆净值年度同比变化率 | 2位小数 |
+| `investor_net_worth` | FLOAT | Leverage_Net | 投资者净资产 (等于杠杆净值) | 2位小数 |
+| `leverage_normalized` | FLOAT | Leverage_Net / Stock_Market_Cap | 杠杆净值与S&P500总市值比 | 6位小数 |
+| `market_return_mom` | FLOAT | 月度变化率 | S&P500市场回报月度变化率 | 2位小数 |
+| `market_return_yoy` | FLOAT | 年度变化率 | S&P500市场回报年度变化率 | 2位小数 |
+| `vulnerability_index` | FLOAT | Leverage_Z - VIX_Z | **脆弱性指数** (最核心) | 3位小数 |
 
-**investor_net_worth计算**:
-```python
-def calculate_investor_net_worth(margin_debt, sp500_market_cap, cash_balance=None):
-    """
-    简化计算: 假设现金余额 = 0.5 * margin_debt (行业估算)
-    市场缓冲垫 = S&P500市值的10%
-    """
-    if cash_balance is None:
-        cash_balance = margin_debt * 0.5
-    market_cushion = sp500_market_cap * 0.1
-    return (cash_balance - margin_debt) - market_cushion
-```
+**Part2指标计算逻辑** (参考 `docs/calMethod.md`):
+- **杠杆净值**: `Leverage_Net = D - (CC + CM)` (投资者净杠杆)
+- **杠杆变化率**:
+  - 月度: `(Leverage_Net_t / Leverage_Net_{t-1}) - 1`
+  - 年度: `(Leverage_Net_t / Leverage_Net_{t-12}) - 1`
+- **投资者净资产**: 直接等于杠杆净值
+- **杠杆标准化**: `Leverage_Normalized = Leverage_Net / Stock_Market_Cap` (用于Z-Score)
+- **市场回报率**:
+  - 月度: `(S&P500_t / S&P500_{t-1}) - 1`
+  - 年度: `(S&P500_t / S&P500_{t-12}) - 1`
+- **脆弱性指数**: `Vulnerability = Leverage_Z - VIX_Z` (核心算法)
 
-**vulnerability_index计算**:
-- 详细算法见 `docs/sig_Bubbles.md`
-- 基础公式: `杠杆Z分数 - VIX Z分数`
-- 窗口: 252个交易日 (约12个月)
-- 更新频率: 月度
+**vulnerability_index计算 (参考 `docs/sig_Bubbles.md`)**:
+- **核心公式**: `Vulnerability_t = Leverage_Z_t - VIX_Z_t`
+- **杠杆标准化**: `Leverage_Normalized_t = Leverage_Net_t / Stock_Market_Cap_t`
+- **Z-Score计算**:
+  ```python
+  Leverage_Z_t = (Leverage_Normalized_t - μ_lev) / σ_lev
+  VIX_Z_t = (VIX_t - μ_vix) / σ_vix
+  ```
+- **窗口**: 252个交易日 (约12个月)
+- **风险阈值**:
+  - Vulnerability > 3: 高风险 (泡沫/自满)
+  - Vulnerability < -3: 低风险 (恐慌/去杠杆)
+  - -1 ~ +1: 中性 (正常市场)
+- **更新频率**: 月度
 
-### 4. Z-Score标准化字段
+### 4. Z-Score标准化字段 (参考 `docs/sig_Bubbles.md`)
 
 | 字段名 | 类型 | 描述 | 计算方法 | 窗口 |
 |--------|------|------|----------|------|
-| `leverage_zscore` | FLOAT | 杠杆Z分数 | (margin_debt - rolling_mean) / rolling_std | 252日 |
+| `leverage_zscore` | FLOAT | 杠杆Z分数 | (Leverage_Normalized - rolling_mean) / rolling_std | 252日 |
 | `vix_zscore` | FLOAT | VIX Z分数 | (vix_index - rolling_mean) / rolling_std | 252日 |
+
+**Z-Score计算方法**:
+```python
+def calculate_zscore(series, window=252):
+    """
+    Z-Score标准化
+    Z > 0: 高于历史平均
+    Z < 0: 低于历史平均
+    Z = ±2: 偏离2个标准差
+    Z = ±3: 偏离3个标准差 (极端值)
+    """
+    rolling_mean = series.rolling(window=window, min_periods=1).mean()
+    rolling_std = series.rolling(window=window, min_periods=1).std()
+    return (series - rolling_mean) / rolling_std
+```
+
+**关键应用**:
+- **杠杆Z分数**: 基于 `Leverage_Normalized` 的252天滚动标准化
+- **VIX Z分数**: 基于 `vix_index` 的252天滚动标准化
+- **脆弱性指数**: `Vulnerability = Leverage_Z - VIX_Z`
 
 ### 5. 风险分析字段
 
@@ -100,18 +146,23 @@ def calculate_investor_net_worth(margin_debt, sp500_market_cap, cash_balance=Non
 | `risk_score` | FLOAT | 风险评分 (0-100) | 0.0-100.0 |
 | `confidence_level` | FLOAT | 置信度 | 0.0-1.0 |
 
-**风险等级映射**:
+**风险等级映射** (参考 `docs/sig_Bubbles.md`):
 ```python
 def map_risk_level(vulnerability_index):
-    q25, q50, q75 = vulnerability_index.quantile([0.25, 0.5, 0.75])
-    if vulnerability_index <= q25:
-        return '低'
-    elif vulnerability_index <= q50:
-        return '中'
-    elif vulnerability_index <= q75:
-        return '高'
+    """
+    风险等级分类
+    基于脆弱性指数的阈值判断
+    """
+    if vulnerability_index > 3:
+        return '极高'  # 泡沫/自满状态，高风险
+    elif vulnerability_index > 1:
+        return '高'    # 杠杆高、波动率低
+    elif vulnerability_index < -3:
+        return '低'    # 恐慌/去杠杆状态，可能见底
+    elif vulnerability_index < -1:
+        return '中'    # 杠杆低、波动率高
     else:
-        return '极高'
+        return '中'    # -1 ~ +1: 市场风险中性
 ```
 
 ### 6. 元数据字段
@@ -123,23 +174,44 @@ def map_risk_level(vulnerability_index):
 | `data_quality_flag` | ENUM | 数据质量标记 | 见下 |
 | `notes` | TEXT | 备注信息 | 可选 |
 
-**data_source JSON结构**:
+**data_source JSON结构** (参考 `docs/dataSourceExplain.md`):
 ```json
 {
-    "sp500": {
-        "source": "yahoo_finance",
-        "api_version": "v8",
-        "last_updated": "2025-11-07"
+    "finra_margin": {
+        "source": "finra_local",
+        "file": "margin-statistics.csv",
+        "fields": {
+            "D": "Debit Balances in Customers' Securities Margin Accounts",
+            "CC": "Free Credit Balances in Customers' Cash Accounts",
+            "CM": "Free Credit Balances in Customers' Securities Margin Accounts"
+        },
+        "date_range": "1997-01 to 2025-09",
+        "last_updated": "2025-10-31"
     },
     "vix": {
         "source": "cboe",
-        "api_version": "v1",
+        "url": "https://www.cboe.com/tradable_products/vix/vix_historical_data/",
+        "method": "daily_to_monthly_mean",
+        "date_range": "1997-01 to 2025-09",
         "last_updated": "2025-11-07"
     },
-    "margin_debt": {
-        "source": "finra_local",
-        "file": "margin-statistics.csv",
-        "last_updated": "2025-10-31"
+    "sp500": {
+        "source": "yahoo_finance",
+        "api_version": "v8",
+        "date_range": "1997-01 to 2025-09",
+        "last_updated": "2025-11-07"
+    },
+    "wilshire5000": {
+        "source": "fred",
+        "series_id": "WILL5000INDFC",
+        "date_range": "1997-01 to 2025-09",
+        "last_updated": "2025-11-07"
+    },
+    "m2": {
+        "source": "fred",
+        "series_id": "M2SL",
+        "date_range": "1997-01 to 2025-09",
+        "last_updated": "2025-11-07"
     }
 }
 ```
@@ -337,27 +409,52 @@ CHANGELOG = {
 
 ```mermaid
 graph TD
-    A[FINRA数据] -->|CSV Load| B[原始数据合并]
-    C[FRED数据] -->|API| B
-    D[Yahoo Finance] -->|API| B
-    E[CBOE数据] -->|API| B
+    A[datas/margin-statistics.csv] -->|Load FINRA Data| B[原始数据合并]
+    B --> B1[finra_D (借方余额)]
+    B --> B2[finra_CC (现金贷方)]
+    B --> B3[finra_CM (保证金贷方)]
 
-    B --> F[数据清洗]
-    F --> G[Part1计算]
-    F --> H[Part2计算]
-    G --> I[完整数据集]
-    H --> I
-    I --> J[数据验证]
-    J --> K[CSV存储]
-    J --> L[质量报告]
+    C[FRED API] -->|Wilshire 5000| D[市场总市值]
+    C -->|M2SL| E[M2货币供应]
+    C -->|DFF| F[联邦基金利率]
+    C -->|DGS10| G[10年期国债]
 
-    style I fill:#e1f5fe
+    H[CBOE VIX] -->|日度转月度| I[VIX月度均值]
+    J[Yahoo Finance] -->|S&P500| K[市场指数]
+
+    B1 & B2 & B3 --> L[数据清洗与合并]
+    D & E & F & G & I & K --> L
+
+    L --> M[Part1计算 (1997-01起)]
+    L --> N[Part2计算 (2010-02起)]
+
+    M --> O[市场杠杆率、货币供应比率、利率分析]
+    N --> P[杠杆净值、变化率、脆弱性指数]
+
+    O --> Q[完整数据集 complete_market_analysis_monthly.csv]
+    P --> Q
+
+    Q --> R[风险等级分类]
+    Q --> S[数据验证]
+    S --> T[质量报告]
+
+    style Q fill:#e1f5fe
     style vulnerability_index fill:#ffeb3b
+    style leverage_net fill:#f9f9f9
 ```
 
 ---
 
-**数据模型版本**: 1.0.0
-**最后更新**: 2025-11-08
+**数据模型版本**: 1.0.1
+**最后更新**: 2025-11-11
+**变更记录**:
+- v1.0.0: 初始数据结构
+- v1.0.1: 整合用户提供的文档，添加FINRA三字段详情，更新脆弱性指数算法说明
 **状态**: ✅ 已通过技术审查
 **下一步**: 创建API合同 (contracts/)
+
+**参考文档**:
+- `docs/dataSourceExplain.md` - 数据源详细说明
+- `docs/calMethod.md` - 核心计算指标方法
+- `docs/sig_Bubbles.md` - 脆弱性指数算法
+- `docs/tableElements.md` - 图表展示规范

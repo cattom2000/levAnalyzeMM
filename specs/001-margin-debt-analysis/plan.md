@@ -7,7 +7,7 @@
 
 ## 摘要
 
-本项目构建一个基于Streamlit的融资余额市场分析系统，通过多数据源集成和高级可视化，识别市场风险信号和投资机会。系统核心为**脆弱性指数**（杠杆Z分数 - VIX Z分数），配合Part1和Part2共6个核心指标，实现从1997年至2025年的市场数据分析和历史危机时期对比。
+本项目构建一个基于Streamlit的融资余额市场分析系统，通过多数据源集成和高级可视化，识别市场风险信号和投资机会。系统核心为**脆弱性指数**（杠杆Z分数 - VIX Z分数），配合Part1和Part2共7个核心指标图表，实现从1997年至2025年的市场数据分析和历史危机时期对比。
 
 **新增内容**:
 - 用户提供数据源：`datas/margin-statistics.csv` (FINRA融资余额数据，1997-01至2025-09)
@@ -34,7 +34,7 @@
 **项目类型**: 单体Web应用
 **性能目标**: 页面加载 < 30秒, 图表交互响应 < 2秒, 单次分析 < 10秒
 **约束条件**: 数据覆盖率 Part1 ≥95%, Part2 ≥95%, 核心算法测试覆盖率 > 80%
-**规模/范围**: 处理25+年历史数据，月度频率，6个核心指标，4个历史危机时期（2000-2002互联网泡沫、2007-2009金融危机、2020-2022疫情、2021-2022高通胀）
+**规模/范围**: 处理25+年历史数据，月度频率，7个核心指标图表，4个历史危机时期（2000-2002互联网泡沫、2007-2009金融危机、2020-2022疫情、2021-2022高通胀）
 
 ## 章程检查
 
@@ -124,7 +124,7 @@ datas/
 docs/
 ├── sig_Bubbles.md          # 脆弱性指数Z-score计算方法 (算法参考)
 ├── calMethod.md            # 核心计算指标计算方法
-├── tableElements.md        # 图表展示说明 (6个核心指标)
+├── tableElements.md        # 图表展示说明 (7个核心指标)
 └── dataSourceExplain.md    # 数据源说明 (VIX获取、FINRA数据字段)
 
 ```
@@ -134,7 +134,7 @@ docs/
 **文档参考**:
 - 核心算法: `docs/sig_Bubbles.md` (脆弱性指数计算方法)
 - 计算逻辑: `docs/calMethod.md` (Part1 & Part2指标计算公式)
-- 可视化设计: `docs/tableElements.md` (6个核心图表展示方式)
+- 可视化设计: `docs/tableElements.md` (7个核心图表展示方式)
 - 数据源处理: `docs/dataSourceExplain.md` (FINRA数据字段说明 & VIX数据获取)
 
 ## 复杂度跟踪
@@ -263,13 +263,14 @@ docs/
 - `generate_investment_insights(df: pd.DataFrame, confidence_threshold: float = 0.8) -> dict`
 - `analyze_historical_crises(df: pd.DataFrame) -> dict`: 分析4个历史危机时期
 
-**visualization.py** (参考 `docs/tableElements.md` - 6个核心图表)
+**visualization.py** (参考 `docs/tableElements.md` - 7个核心图表)
 - `create_market_leverage_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 双Y轴图表 (市场杠杆率 & S&P500)
 - `create_money_supply_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: Margin Debt / M2 比率
 - `create_interest_cost_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 利率成本分析
 - `create_leverage_change_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 杠杆变化率对比
 - `create_investor_net_worth_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 投资者净资产
 - `create_vulnerability_index_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 脆弱性指数图表
+- `create_vix_leverage_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: VIX与杠杆对比图表 (第一Y轴VIX_t，第二Y轴Leverage_Normalized_t)
 - `highlight_historical_crises(fig: plotly.graph_objects.Figure) -> plotly.graph_objects.Figure`: 标记4个历史危机时期
 
 ### 快速开始指南 (quickstart.md)

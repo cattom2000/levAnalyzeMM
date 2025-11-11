@@ -549,6 +549,115 @@ class Visualization:
         """
         raise NotImplementedError
 
+    # ==================== 核心图表函数 ====================
+
+    def create_market_leverage_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建市场杠杆率图表 - 双Y轴显示 (市场杠杆率% & S&P500指数)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly双Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+            DataFormatError: 缺少必要字段
+        """
+        raise NotImplementedError
+
+    def create_money_supply_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建货币供应比率图表 - Margin Debt / M2 比率
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly单Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+        """
+        raise NotImplementedError
+
+    def create_interest_cost_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建利率成本分析图表 - 双Y轴 (Margin Debt年同比变化率% & 利率%)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly双Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+        """
+        raise NotImplementedError
+
+    def create_leverage_change_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建杠杆变化率图表 - 双Y轴 (杠杆净值年变化率% & 市场回报年变化率%)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly双Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+        """
+        raise NotImplementedError
+
+    def create_investor_net_worth_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建投资者净资产图表 - Leverage_Net(杠杆净值)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly单Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+        """
+        raise NotImplementedError
+
+    def create_vulnerability_index_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建脆弱性指数图表 - 杠杆Z分数 - VIX Z分数 (核心指标)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly单Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+            VisualizationError: 计算错误
+        """
+        raise NotImplementedError
+
+    def create_vix_leverage_chart(self, df: pd.DataFrame) -> go.Figure:
+        """
+        创建VIX与杠杆对比图表 - 双Y轴 (第一Y轴VIX_t，第二Y轴Leverage_Normalized_t)
+
+        Args:
+            df: 包含市场数据的DataFrame
+
+        Returns:
+            Plotly双Y轴图表
+
+        Raises:
+            ValueError: 数据格式错误
+        """
+        raise NotImplementedError
+
     # ==================== 异常类定义 ====================
 
 class VisualizationError(Exception):

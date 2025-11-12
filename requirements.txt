@@ -1,0 +1,24 @@
+# Core dependencies for Margin Debt Market Analysis System
+# Project: levAnalyzeMM
+# Version: 1.0.0
+
+# Web application framework
+streamlit>=1.28.0
+
+# Data processing and analysis
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization
+plotly>=5.17.0
+
+# Data sources
+yfinance>=0.2.18
+fredapi>=0.5.0
+
+# Utilities
+python-dateutil>=2.8.0
+
+# Testing (optional for development)
+pytest>=7.0.0
+pytest-cov>=4.0.0

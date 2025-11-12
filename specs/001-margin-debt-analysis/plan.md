@@ -34,7 +34,7 @@
 **项目类型**: 单体Web应用
 **性能目标**: 页面加载 < 30秒, 图表交互响应 < 2秒, 单次分析 < 10秒
 **约束条件**: 数据覆盖率 Part1 ≥95%, Part2 ≥95%, 核心算法测试覆盖率 > 80%
-**规模/范围**: 处理25+年历史数据，月度频率，7个核心指标图表，4个历史危机时期（2000-2002互联网泡沫、2007-2009金融危机、2020-2022疫情、2021-2022高通胀）
+**规模/范围**: 处理25+年历史数据，月度频率，7个核心指标图表，3个历史危机时期（1999-2003互联网泡沫、2006-2010金融危机、2019-2023疫情冲击）
 
 ## 章程检查
 
@@ -261,7 +261,7 @@ docs/
 - `detect_bubble_signals(vulnerability_index: pd.Series) -> pd.Series`: 泡沫信号检测 (Vulnerability > 3)
 - `classify_market_regime(df: pd.DataFrame) -> pd.Series`: 市场状态分类
 - `generate_investment_insights(df: pd.DataFrame, confidence_threshold: float = 0.8) -> dict`
-- `analyze_historical_crises(df: pd.DataFrame) -> dict`: 分析4个历史危机时期
+- `analyze_historical_crises(df: pd.DataFrame) -> dict`: 分析3个历史危机时期
 
 **visualization.py** (参考 `docs/tableElements.md` - 7个核心图表)
 - `create_market_leverage_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 双Y轴图表 (市场杠杆率 & S&P500)
@@ -271,7 +271,7 @@ docs/
 - `create_investor_net_worth_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 投资者净资产
 - `create_vulnerability_index_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: 脆弱性指数图表
 - `create_vix_leverage_chart(df: pd.DataFrame) -> plotly.graph_objects.Figure`: VIX与杠杆对比图表 (第一Y轴VIX_t，第二Y轴Leverage_Normalized_t)
-- `highlight_historical_crises(fig: plotly.graph_objects.Figure) -> plotly.graph_objects.Figure`: 标记4个历史危机时期
+- `highlight_historical_crises(fig: plotly.graph_objects.Figure) -> plotly.graph_objects.Figure`: 标记3个历史危机时期
 
 ### 快速开始指南 (quickstart.md)
 

@@ -309,34 +309,36 @@ class MarginDebtCalculator:
         result_df = df.copy()
 
         try:
-            # 1. 计算市场杠杆率
-            if 'margin_debt' in df.columns and 'sp500_market_cap' in df.columns:
+            # 1. 计算市场杠杆率 (使用 finra_D 和 market_cap)
+            if 'finra_D' in df.columns and 'market_cap' in df.columns:
                 result_df['market_leverage_ratio'] = self.calculate_market_leverage_ratio(
-                    df['margin_debt'], df['sp500_market_cap']
+                    df['finra_D'], df['market_cap']
                 )
                 self.logger.info("✓ Part1指标: 市场杠杆率计算完成")
 
-            # 2. 计算货币供应比率
-            if 'margin_debt' in df.columns and 'm2_money_supply' in df.columns:
+            # 2. 计算货币供应比率 (使用 finra_D 和 m2_money_supply)
+            if 'finra_D' in df.columns and 'm2_money_supply' in df.columns:
                 result_df['money_supply_ratio'] = self.calculate_money_supply_ratio(
-                    df['margin_debt'], df['m2_money_supply']
+                    df['finra_D'], df['m2_money_supply']
                 )
                 self.logger.info("✓ Part1指标: 货币供应比率计算完成")
 
-            # 3. 计算利率成本分析
-            if 'margin_debt' in df.columns and 'federal_funds_rate' in df.columns:
+            # 3. 计算利率成本分析 (暂时跳过，等待 Phase 2 添加 DFF)
+            if 'finra_D' in df.columns and 'federal_funds_rate' in df.columns:
                 interest_analysis = self.calculate_interest_cost_analysis(
-                    df['margin_debt'], df['federal_funds_rate']
+                    df['finra_D'], df['federal_funds_rate']
                 )
                 # 将分析结果合并到主DataFrame
                 for col in ['correlation', 'regression_slope', 'r_squared']:
                     result_df[f'interest_{col}'] = interest_analysis[col]
                 self.logger.info("✓ Part1指标: 利率成本分析完成")
+            else:
+                self.logger.info("⚠ Part1指标: 利率成本分析跳过 (缺少 federal_funds_rate 数据)")
 
-            # 4. 计算Part1覆盖度
+            # 4. 计算Part1覆盖度 (移除 interest_correlation，因为尚未实现)
             part1_coverage = self._calculate_coverage(
                 result_df,
-                ['market_leverage_ratio', 'money_supply_ratio', 'interest_correlation']
+                ['market_leverage_ratio', 'money_supply_ratio']
             )
 
             self.logger.info(
@@ -735,11 +737,18 @@ class MarginDebtCalculator:
         }
 
         try:
-            # 计算Part1覆盖度
+            # 计算Part1覆盖度 (使用修正后的列名)
             part1_cols = ['market_leverage_ratio', 'money_supply_ratio']
             part1_available = [col for col in part1_cols if col in df.columns]
             if part1_available:
                 stats_dict['part1_coverage'] = self._calculate_coverage(df, part1_available)
+            else:
+                # 如果列不存在，尝试直接从数据列计算
+                if 'finra_D' in df.columns and 'market_cap' in df.columns and 'm2_money_supply' in df.columns:
+                    # 数据存在但计算可能失败，设为0
+                    stats_dict['part1_coverage'] = 0.0
+                else:
+                    stats_dict['part1_coverage'] = 0.0
 
             # 计算Part2覆盖度
             part2_cols = ['leverage_net', 'leverage_change_yoy', 'investor_net_worth']

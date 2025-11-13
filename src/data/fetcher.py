@@ -222,6 +222,37 @@ class DataFetcher:
         except Exception as e:
             raise DataSourceError(f"Error fetching M2 money supply: {str(e)}")
 
+    def fetch_federal_funds_rate(self, start_date: str, end_date: str) -> pd.Series:
+        """
+        Fetch Federal Funds Rate (DFF) from FRED
+
+        Args:
+            start_date: Start date
+            end_date: End date
+
+        Returns:
+            Series with Federal Funds Rate values
+        """
+        if self.fred_client is None:
+            raise DataSourceError("FRED client not initialized")
+
+        cache_key = self._get_cache_key("dff", start_date=start_date, end_date=end_date)
+        cached_data = self._get_from_cache(cache_key)
+
+        if cached_data is not None:
+            return cached_data
+
+        try:
+            dff_series = self.fred_client.get_series('DFF', start=start_date, end=end_date)
+            if dff_series.empty:
+                raise DataSourceError("No DFF data retrieved")
+
+            self._save_to_cache(cache_key, dff_series)
+            return dff_series
+
+        except Exception as e:
+            raise DataSourceError(f"Error fetching Federal Funds Rate: {str(e)}")
+
     def sync_data_sources(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Synchronize data from multiple sources
@@ -342,6 +373,14 @@ class DataFetcher:
                 except Exception as e:
                     print(f"Warning: Could not fetch M2 data: {e}")
 
+            # Fetch Federal Funds Rate if FRED is available
+            dff_data = None
+            if self.fred_client:
+                try:
+                    dff_data = self.fetch_federal_funds_rate(start_date, end_date)
+                except Exception as e:
+                    print(f"Warning: Could not fetch DFF data: {e}")
+
             # Combine all data
             combined_data = finra_df.copy()
 
@@ -369,6 +408,15 @@ class DataFetcher:
                 # Align M2 data index with combined_data index format (month start dates)
                 m2_aligned = m2_monthly.reindex(combined_data.index)
                 combined_data['m2_money_supply'] = m2_aligned
+
+            # Add DFF (Federal Funds Rate) data if available
+            if dff_data is not None:
+                dff_monthly = dff_data.resample('M').last()
+                # Convert from month-end to month-start to match FINRA data format
+                dff_monthly.index = dff_monthly.index + pd.offsets.MonthBegin(0)
+                # Align DFF data index with combined_data index format (month start dates)
+                dff_aligned = dff_monthly.reindex(combined_data.index)
+                combined_data['federal_funds_rate'] = dff_aligned
 
             # Calculate market cap (approximate)
             combined_data['market_cap'] = combined_data['sp500_index'] * 400

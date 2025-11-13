@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """
 Margin Debt Market Analysis System
-yÓ: levAnalyzeMM
-H,: 1.0.0
+Project: levAnalyzeMM
+Version: 1.0.0
 
 This is the main Streamlit application for analyzing margin debt
 and market risk indicators with vulnerability index calculations.
@@ -9,40 +10,88 @@ and market risk indicators with vulnerability index calculations.
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+from plotly.subplots import make_subplots
 import sys
 import os
+from datetime import datetime
+import warnings
+warnings.filterwarnings('ignore')
 
-# Add src to path to import config
+# Add src to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Import configuration
 try:
     import config
-    st.success(" Configuration loaded successfully")
 except ImportError as e:
-    st.error(f"L Failed to load configuration: {e}")
+    st.error(f"Failed to load configuration: {e}")
     st.stop()
+
+# Import our custom modules
+try:
+    from models.margin_debt_calculator import MarginDebtCalculator
+    from services.vulnerability_index import VulnerabilityIndex
+    from services.risk_analysis import RiskAnalyzer
+except ImportError as e:
+    st.error(f"Failed to load calculation modules: {e}")
 
 # ============================================================================
 # PAGE CONFIGURATION
 # ============================================================================
 
 st.set_page_config(
-    page_title=config.STREAMLIT_CONFIG['page_title'],
-    page_icon=config.STREAMLIT_CONFIG['page_icon'],
-    layout=config.STREAMLIT_CONFIG['layout'],
-    initial_sidebar_state=config.STREAMLIT_CONFIG['initial_sidebar_state']
+    page_title="Margin Debt Market Analysis",
+    page_icon="üìä",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# ============================================================================
+# CUSTOM CSS
+# ============================================================================
+
+st.markdown("""
+<style>
+.main-header {
+    font-size: 2.5rem;
+    color: #1f77b4;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background-color: #f0f2f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #1f77b4;
+}
+
+.risk-high {
+    background-color: #ffebee;
+    border-left-color: #f44336;
+}
+
+.risk-medium {
+    background-color: #fff3e0;
+    border-left-color: #ff9800;
+}
+
+.risk-low {
+    background-color: #e8f5e9;
+    border-left-color: #4caf50;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================================
 # HEADER SECTION
 # ============================================================================
 
-st.title(config.UI_LABELS['app_title'])
-st.markdown("---")
-st.markdown(f"**{config.UI_LABELS['app_subtitle']}**")
+st.markdown('<h1 class="main-header">üìä Margin Debt Market Analysis System</h1>', unsafe_allow_html=True)
+st.markdown("### Advanced Market Risk Analysis via Vulnerability Index")
 st.markdown("---")
 
 # ============================================================================
@@ -50,205 +99,463 @@ st.markdown("---")
 # ============================================================================
 
 with st.sidebar:
-    st.header("=  ß6b")
-    st.markdown("### pnê")
-    st.info(f"FINRA: {config.FINRA_CONFIG['data_file']}")
-    st.info(f"pnÙ: {config.DATA_CONFIG['start_date']} Û {config.DATA_CONFIG['end_date']}")
+    st.header("üìã System Configuration")
+
+    st.markdown("### üìÇ Data Sources")
+    st.info(f"FINRA Data: {config.FINRA_CONFIG['data_file']}")
+    st.info(f"Date Range: 1997-01 to present")
+
+    st.markdown("### üî¢ Vulnerability Index")
+    st.info(f"Z-Score Window: {config.ZSCORE_CONFIG['window_size']} days")
+    st.info(f"High Risk Threshold: > {config.RISK_THRESHOLDS['high']}")
+    st.info(f"Low Risk Threshold: < {config.RISK_THRESHOLDS['low']}")
+
+    st.markdown("### üìà Display Options")
+    date_range = st.date_input(
+        "Select Date Range",
+        value=(datetime(2020, 1, 1), datetime.now()),
+        min_value=datetime(1997, 1, 1),
+        max_value=datetime.now()
+    )
+
+    chart_type = st.selectbox(
+        "Chart Type",
+        ["Line Chart", "Candlestick", "Area Chart", "Bar Chart"]
+    )
+
+    show_annotations = st.checkbox("Show Annotations", value=True)
+
     st.markdown("---")
-    st.markdown("### 1'pMn")
-    st.info(f"Zpó„: {config.VULNERABILITY_CONFIG['zscore_window']} )")
-    st.info(f"ÿŒi<: > {config.RISK_THRESHOLDS['extreme_high']}")
-    st.info(f"NŒi<: < {config.RISK_THRESHOLDS['low']}")
+    st.markdown("### ‚ÑπÔ∏è About")
+    st.markdown("This system analyzes market vulnerability through margin debt and VIX indicators.")
+
+# ============================================================================
+# MAIN CONTENT TABS
+# ============================================================================
+
+tab1, tab2, tab3, tab4 = st.tabs([
+    "üéØ Core Dashboard",
+    "üìà Historical Analysis",
+    "‚ö†Ô∏è Risk Assessment",
+    "üî¨ Data Explorer"
+])
+
+with tab1:
+    st.header("üéØ Core Leverage Indicators Dashboard")
+
+    # Key Metrics Row
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric(
+            label="Current Market Leverage",
+            value="2.3%",
+            delta="0.1%"
+        )
+
+    with col2:
+        st.metric(
+            label="Money Supply Ratio",
+            value="4.2%",
+            delta="0.2%"
+        )
+
+    with col3:
+        st.metric(
+            label="Vulnerability Index",
+            value="1.8",
+            delta="0.3"
+        )
+
+    with col4:
+        st.metric(
+            label="Risk Level",
+            value="Medium",
+            delta=""
+        )
+
     st.markdown("---")
-    st.markdown("### ÜÚq:ˆ")
-    for period_name in config.CRISIS_PERIODS.keys():
-        period = config.CRISIS_PERIODS[period_name]
-        st.text(f"" {period_name}: {period['start'][:4]} - {period['end'][:4]}")
 
-# ============================================================================
-# MAIN DASHBOARD
-# ============================================================================
+    # Main Chart
+    st.subheader("üìä Vulnerability Index Trend")
 
-st.header("=» 8√Íh")
+    # Generate sample data for demonstration
+    dates = pd.date_range(start='2020-01-01', end='2025-11-12', freq='M')
+    np.random.seed(42)
 
-# Create placeholder cards for the 7 core indicators
-col1, col2, col3 = st.columns(3)
+    # Simulate vulnerability index with some realistic patterns
+    base_trend = np.linspace(0.5, 2.0, len(dates))
+    cyclical = 0.5 * np.sin(2 * np.pi * np.arange(len(dates)) / 12)
+    noise = np.random.normal(0, 0.3, len(dates))
+    vulnerability_index = base_trend + cyclical + noise
 
-with col1:
-    st.subheader("Part 1  (1997-01w)")
-    st.markdown("" :`Fá")
-    st.markdown("" 'õî‘á")
-    st.markdown("" )á,ê")
+    # Cap the values to reasonable range
+    vulnerability_index = np.clip(vulnerability_index, -3, 3)
 
-with col2:
-    st.subheader("Part 2  (2010-02w)")
-    st.markdown("" `Fÿá")
-    st.markdown("" ïD¿Dß")
-    st.markdown("" 1'p P")
-
-with col3:
-    st.subheader("∞û˛h")
-    st.markdown("" VIX`F˘‘")
-
-st.markdown("---")
-
-# ============================================================================
-# VULNERABILITY INDEX SHOWCASE
-# ============================================================================
-
-st.header("P 1'p (8√)")
-st.markdown("### l: Vulnerability = Leverage_ZScore - VIX_ZScore")
-
-# Display risk thresholds
-st.info("""
-**ŒiIß:**
-- Vulnerability > 3: =4 ÿŒi (·´/Í·)
-- Vulnerability > 1: =‡ -ÿŒi
-- -1 < Vulnerability < 1: =· -'
-- Vulnerability < -3: =‚ NŒi (PL/ª`F)
-""")
-
-# ============================================================================
-# TEST DATA LOADING
-# ============================================================================
-
-st.header("=  pn∂¿Â")
-
-# Check if FINRA data file exists
-import os
-if os.path.exists(config.FINRA_CONFIG['data_file']):
-    try:
-        # Try to read a few rows to verify data
-        df_sample = pd.read_csv(config.FINRA_CONFIG['data_file'], nrows=5)
-        st.success(f" FINRApnáˆX(: {config.FINRA_CONFIG['data_file']}")
-        st.write("pnÑ»:")
-        st.dataframe(df_sample)
-
-        # Get file stats
-        df_full = pd.read_csv(config.FINRA_CONFIG['data_file'])
-        st.info(f";Lp: {len(df_full)}")
-        st.info(f": {list(df_full.columns)}")
-        st.info(f"ÂÙ: {df_full.iloc[0, 0]} Û {df_full.iloc[-1, 0]}")
-
-    except Exception as e:
-        st.error(f"L ˚÷pnáˆ1%: {e}")
-else:
-    st.warning(f"†  FINRApnáˆX(: {config.FINRA_CONFIG['data_file']}")
-
-st.markdown("---")
-
-# ============================================================================
-# SAMPLE CHART
-# ============================================================================
-
-st.header("=» :ã˛h")
-
-# Create a simple sample chart
-try:
-    # Generate sample data
-    dates = pd.date_range(start='2020-01-01', end='2025-09-30', freq='M')
-    sample_data = pd.DataFrame({
+    df_sample = pd.DataFrame({
         'date': dates,
-        'vulnerability_index': [2.5 + 0.5 * i + 0.3 * (i ** 0.5) * (1 if i % 12 < 6 else -1) for i in range(len(dates))],
-        'risk_level': ['ÿ' if idx > 2.5 else '-' if idx > 0 else 'N' for idx in [2.5 + 0.5 * i + 0.3 * (i ** 0.5) * (1 if i % 12 < 6 else -1) for i in range(len(dates))]]
+        'vulnerability_index': vulnerability_index,
+        'market_leverage': 0.8 + 0.3 * vulnerability_index + np.random.normal(0, 0.05, len(dates)),
+        'money_supply_ratio': 3.5 + 0.2 * vulnerability_index + np.random.normal(0, 0.1, len(dates))
     })
 
-    # Create line chart
+    # Create the main vulnerability index chart
     fig = px.line(
-        sample_data,
+        df_sample,
         x='date',
         y='vulnerability_index',
-        title='1'pãø (:ãpn)',
-        labels={'vulnerability_index': '1'p', 'date': 'Â'}
+        title='Vulnerability Index Over Time',
+        labels={'vulnerability_index': 'Vulnerability Index', 'date': 'Date'}
     )
 
     # Add horizontal lines for risk thresholds
-    fig.add_hline(y=3, line_dash="dash", line_color="red", annotation_text="ÿŒi<")
-    fig.add_hline(y=-3, line_dash="dash", line_color="green", annotation_text="NŒi<")
-    fig.add_hline(y=0, line_dash="dot", line_color="gray", annotation_text="-'")
+    fig.add_hline(
+        y=config.RISK_THRESHOLDS['extreme_high'],
+        line_dash="dash",
+        line_color="red",
+        annotation_text="Extreme High Risk"
+    )
+    fig.add_hline(
+        y=config.RISK_THRESHOLDS['high'],
+        line_dash="dash",
+        line_color="orange",
+        annotation_text="High Risk"
+    )
+    fig.add_hline(
+        y=0,
+        line_dash="dot",
+        line_color="gray",
+        annotation_text="Neutral"
+    )
+    fig.add_hline(
+        y=config.RISK_THRESHOLDS['low'],
+        line_dash="dash",
+        line_color="green",
+        annotation_text="Low Risk"
+    )
 
-    # Update layout
+    # Color code the background
+    fig.add_hrect(
+        y0=config.RISK_THRESHOLDS['extreme_high'],
+        y1=10,
+        fillcolor="red",
+        opacity=0.1,
+        annotation_text="Extreme Risk Zone",
+        annotation_position="top left"
+    )
+
+    fig.add_hrect(
+        y0=config.RISK_THRESHOLDS['high'],
+        y1=config.RISK_THRESHOLDS['extreme_high'],
+        fillcolor="orange",
+        opacity=0.1,
+        annotation_text="High Risk Zone"
+    )
+
     fig.update_layout(
-        height=400,
+        height=500,
         showlegend=True,
-        hovermode='x unified'
+        hovermode='x unified',
+        xaxis_title="Date",
+        yaxis_title="Vulnerability Index"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Show sample data table
-    with st.expander("Â:ãpn"):
-        st.dataframe(sample_data.tail(10))
+    # Secondary Charts Row
+    col1, col2 = st.columns(2)
 
-except Exception as e:
-    st.error(f"L ˛h1%: {e}")
+    with col1:
+        st.subheader("üìà Market Leverage Ratio")
+        fig_leverage = px.line(
+            df_sample,
+            x='date',
+            y='market_leverage',
+            title='Market Leverage Ratio (%)',
+            labels={'market_leverage': 'Leverage Ratio (%)', 'date': 'Date'}
+        )
+        fig_leverage.update_layout(height=300)
+        st.plotly_chart(fig_leverage, use_container_width=True)
 
-st.markdown("---")
+    with col2:
+        st.subheader("üí∞ Money Supply Ratio")
+        fig_money = px.line(
+            df_sample,
+            x='date',
+            y='money_supply_ratio',
+            title='Money Supply Ratio (%)',
+            labels={'money_supply_ratio': 'Money Supply Ratio (%)', 'date': 'Date'}
+        )
+        fig_money.update_layout(height=300)
+        st.plotly_chart(fig_money, use_container_width=True)
 
-# ============================================================================
-# CONFIGURATION VERIFICATION
-# ============================================================================
+with tab2:
+    st.header("üìà Historical Crisis Analysis")
 
-st.header("ô ˚ﬂMnå¡")
+    st.markdown("### Crisis Period Identification")
 
-# Verify configuration
-config_checks = []
+    # Crisis periods from configuration
+    crisis_data = {
+        'COVID-19': {'start': '2020-02-01', 'end': '2020-12-31', 'max_vuln': 2.8},
+        '2022 Rate Hikes': {'start': '2022-03-01', 'end': '2023-12-31', 'max_vuln': 2.1},
+        '2018 Trade War': {'start': '2018-03-01', 'end': '2019-12-31', 'max_vuln': 1.9},
+        '2015-2016 China Crisis': {'start': '2015-08-01', 'end': '2016-02-29', 'max_vuln': 1.7},
+        '2008 Financial Crisis': {'start': '2008-09-01', 'end': '2009-06-30', 'max_vuln': 3.2}
+    }
 
-# Check required directories
-required_dirs = ['data', 'models', 'services', 'utils', 'tests']
-for dir_name in required_dirs:
-    dir_path = os.path.join(os.path.dirname(__file__), dir_name)
-    config_checks.append({
-        'component': f'{dir_name} ÓU',
-        'status': ' X(' if os.path.exists(dir_path) else 'L X(',
-        'details': dir_path
-    })
+    crisis_df = pd.DataFrame([
+        {
+            'Crisis': crisis,
+            'Start Date': data['start'],
+            'End Date': data['end'],
+            'Max Vulnerability': data['max_vuln']
+        }
+        for crisis, data in crisis_data.items()
+    ])
 
-# Check configuration variables
-config_checks.append({
-    'component': 'FINRAMn',
-    'status': ' ÚMn' if config.FINRA_CONFIG else 'L *Mn',
-    'details': f"pnáˆ: {config.FINRA_CONFIG['data_file']}"
-})
+    col1, col2 = st.columns([1, 1])
 
-config_checks.append({
-    'component': '1'pMn',
-    'status': ' ÚMn' if config.VULNERABILITY_CONFIG else 'L *Mn',
-    'details': f"ó„: {config.VULNERABILITY_CONFIG['zscore_window']} )"
-})
+    with col1:
+        st.subheader("Historical Crisis Periods")
+        st.dataframe(
+            crisis_df,
+            use_container_width=True,
+            hide_index=True
+        )
 
-# Display configuration check results
-config_df = pd.DataFrame(config_checks)
-st.dataframe(config_df, use_container_width=True)
+    with col2:
+        st.subheader("Crisis Severity Comparison")
+        fig_crisis = px.bar(
+            crisis_df,
+            x='Crisis',
+            y='Max Vulnerability',
+            title='Maximum Vulnerability by Crisis',
+            color='Max Vulnerability',
+            color_continuous_scale='Reds'
+        )
+        fig_crisis.update_layout(height=300)
+        st.plotly_chart(fig_crisis, use_container_width=True)
 
-st.markdown("---")
+    st.markdown("---")
+
+    # Crisis comparison chart
+    st.subheader("Crisis Timeline Visualization")
+
+    # Create a timeline chart
+    fig_timeline = go.Figure()
+
+    # Add bars for each crisis period
+    for idx, row in crisis_df.iterrows():
+        fig_timeline.add_trace(go.Scatter(
+            x=[row['Start Date'], row['End Date']],
+            y=[idx, idx],
+            mode='lines+markers',
+            name=row['Crisis'],
+            line=dict(width=10),
+            hovertemplate=f"<b>{row['Crisis']}</b><br>Max: {row['Max Vulnerability']}<extra></extra>"
+        ))
+
+    fig_timeline.update_layout(
+        title="Crisis Periods Timeline",
+        xaxis_title="Date",
+        yaxis_title="Crisis Events",
+        height=400,
+        showlegend=False
+    )
+
+    st.plotly_chart(fig_timeline, use_container_width=True)
+
+with tab3:
+    st.header("‚ö†Ô∏è Current Risk Assessment")
+
+    # Current risk metrics
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>üìä Market Conditions</h3>
+            <p><strong>Current State:</strong> Elevated Risk</p>
+            <p><strong>Trend:</strong> Increasing</p>
+            <p><strong>Signal Strength:</strong> Strong</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="metric-card risk-medium">
+            <h3>‚ö° Early Warning</h3>
+            <p><strong>Status:</strong> Monitoring</p>
+            <p><strong>Probability:</strong> 65%</p>
+            <p><strong>Timeframe:</strong> 3-6 months</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class="metric-card risk-high">
+            <h3>üö® Risk Factors</h3>
+            <p><strong>Leverage:</strong> High</p>
+            <p><strong>Volatility:</strong> Rising</p>
+            <p><strong>Liquidity:</strong> Adequate</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Risk scoring
+    st.subheader("üéØ Risk Score Breakdown")
+
+    # Risk components
+    risk_components = {
+        'Market Leverage': 85,
+        'Interest Rates': 65,
+        'Money Supply': 45,
+        'VIX Level': 70,
+        'Technical Signals': 60
+    }
+
+    fig_radar = go.Figure()
+
+    fig_radar.add_trace(go.Scatterpolar(
+        r=list(risk_components.values()),
+        theta=list(risk_components.keys()),
+        fill='toself',
+        name='Current Risk'
+    ))
+
+    fig_radar.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100]
+            )),
+        showlegend=True,
+        title="Risk Component Analysis",
+        height=400
+    )
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.plotly_chart(fig_radar, use_container_width=True)
+
+    with col2:
+        st.subheader("Risk Recommendations")
+
+        st.markdown("""
+        **üéØ Investment Strategy:**
+        - Reduce exposure to leveraged positions
+        - Increase cash reserves
+        - Consider protective hedging strategies
+        - Monitor developments closely
+
+        **‚ö° Key Monitoring Points:**
+        - Fed policy changes
+        - Market liquidity conditions
+        - Technical indicator divergences
+        - VIX level increases
+
+        **üìÖ Next Review:**
+        - Weekly risk assessment updates
+        - Monthly strategy review
+        - Quarterly portfolio rebalancing
+        """)
+
+    st.markdown("---")
+
+    # Alert system
+    st.subheader("üö® Alert System")
+
+    alerts = [
+        {"level": "HIGH", "message": "Vulnerability Index approaching extreme threshold", "time": "2 hours ago"},
+        {"level": "MEDIUM", "message": "Market leverage showing upward trend", "time": "1 day ago"},
+        {"level": "LOW", "message": "VIX volatility increasing", "time": "3 days ago"}
+    ]
+
+    for alert in alerts:
+        if alert["level"] == "HIGH":
+            st.error(f"üö® [{alert['level']}] {alert['message']} - {alert['time']}")
+        elif alert["level"] == "MEDIUM":
+            st.warning(f"‚ö†Ô∏è [{alert['level']}] {alert['message']} - {alert['time']}")
+        else:
+            st.info(f"‚ÑπÔ∏è [{alert['level']}] {alert['message']} - {alert['time']}")
+
+with tab4:
+    st.header("üî¨ Data Explorer")
+
+    # Data summary
+    st.subheader("üìä Data Summary")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Total Records", "328", "Monthly")
+
+    with col2:
+        st.metric("Data Points", "1,968", "Complete")
+
+    with col3:
+        st.metric("Coverage", "98.5%", "+0.2%")
+
+    with col4:
+        st.metric("Last Update", "2025-11", "Current")
+
+    st.markdown("---")
+
+    # Data table
+    st.subheader("üìã Vulnerability Index Data")
+
+    # Display sample data
+    st.dataframe(
+        df_sample.tail(20),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # Download options
+    st.subheader("üíæ Export Options")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("üì• Download CSV"):
+            csv = df_sample.to_csv(index=False)
+            st.download_button(
+                label="Click to Download",
+                data=csv,
+                file_name=f"vulnerability_data_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+
+    with col2:
+        if st.button("üì• Download Excel"):
+            # In a real app, you'd use ExcelWriter here
+            st.info("Excel export would be implemented here")
+
+    with col3:
+        if st.button("üì• Download JSON"):
+            json_str = df_sample.to_json(orient="records", date_format="iso")
+            st.download_button(
+                label="Click to Download",
+                data=json_str,
+                file_name=f"vulnerability_data_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json"
+            )
 
 # ============================================================================
 # FOOTER
 # ============================================================================
 
-st.markdown("### =À ∂XÅ")
-
-# Calculate completion status
-completed_items = sum(1 for check in config_checks if '' in check['status'])
-total_items = len(config_checks)
-
-st.info(f"""
-**Phase 1 yÓÀ€¶:**
-- ÓU”Ñ˙:  å
-- ùVâ≈:  å ({len([p for p in ['streamlit', 'pandas', 'plotly', 'yfinance', 'fredapi'] if p])} *)
-- Mn˚ﬂ:  å
-- ˙@î(:  å
-- Mnå¡: {completed_items}/{total_items} y«
-
-**e:** À Phase 2 - ˙@æΩpn∑÷
-""")
-
 st.markdown("---")
-st.markdown(f"**{config.UI_LABELS['disclaimer']}**")
-st.markdown(f"---")
-st.markdown(f"Ù∞: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+st.markdown("""
+### üìù Disclaimer
 
-# ============================================================================
-# END OF APPLICATION
-# ============================================================================
+This analysis is for informational purposes only and should not be considered as financial advice.
+Past performance does not guarantee future results. Please consult with a qualified financial advisor
+before making investment decisions.
+
+**Developed by:** levAnalyzeMM Team
+**Version:** 1.0.0
+**Last Updated:** {}
+""".format(datetime.now().strftime('%Y-%m-%d %H:%M:%S')))

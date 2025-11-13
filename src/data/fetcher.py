@@ -112,15 +112,18 @@ class DataFetcher:
             # Rename columns
             df = df.rename(columns=config.FINRA_CONFIG['columns'])
 
+            # Clean numeric columns (remove commas from string numbers)
+            for col in df.columns:
+                if col != 'Year-Month':
+                    # Remove commas and convert to numeric
+                    df[col] = df[col].astype(str).str.replace(',', '').replace('nan', '')
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+
             # Parse Year-Month column
             if 'Year-Month' in df.columns:
                 df['date'] = pd.to_datetime(df['Year-Month'], format='%Y-%m')
                 df = df.set_index('date')
                 df = df.drop('Year-Month', axis=1)
-
-            # Ensure numeric types
-            for col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
 
             # Save to cache
             self._save_to_cache(cache_key, df)
@@ -344,16 +347,28 @@ class DataFetcher:
 
             # Add VIX data
             vix_monthly = vix_data.resample('M').last()
-            combined_data['vix_index'] = vix_monthly
+            # Convert from month-end to month-start to match FINRA data format
+            vix_monthly.index = vix_monthly.index + pd.offsets.MonthBegin(0)
+            # Align VIX data index with combined_data index format (month start dates)
+            vix_aligned = vix_monthly.reindex(combined_data.index)
+            combined_data['vix_index'] = vix_aligned
 
             # Add S&P 500 data
             sp500_monthly = sp500_data.resample('M').last()
-            combined_data['sp500_index'] = sp500_monthly
+            # Convert from month-end to month-start to match FINRA data format
+            sp500_monthly.index = sp500_monthly.index + pd.offsets.MonthBegin(0)
+            # Align S&P500 data index with combined_data index format (month start dates)
+            sp500_aligned = sp500_monthly.reindex(combined_data.index)
+            combined_data['sp500_index'] = sp500_aligned
 
             # Add M2 data if available
             if m2_data is not None:
                 m2_monthly = m2_data.resample('M').last()
-                combined_data['m2_money_supply'] = m2_monthly
+                # Convert from month-end to month-start to match FINRA data format
+                m2_monthly.index = m2_monthly.index + pd.offsets.MonthBegin(0)
+                # Align M2 data index with combined_data index format (month start dates)
+                m2_aligned = m2_monthly.reindex(combined_data.index)
+                combined_data['m2_money_supply'] = m2_aligned
 
             # Calculate market cap (approximate)
             combined_data['market_cap'] = combined_data['sp500_index'] * 400

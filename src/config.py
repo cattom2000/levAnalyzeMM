@@ -17,9 +17,9 @@ FINRA_CONFIG = {
     'data_file': 'datas/margin-statistics.csv',
     'date_column': 'Year-Month',
     'columns': {
-        'D': 'finra_D',        # Debit Balances
-        'CC': 'finra_CC',      # Cash Credit
-        'CM': 'finra_CM'       # Margin Credit
+        'Debit Balances in Customers\' Securities Margin Accounts': 'finra_D',        # Debit Balances (D)
+        'Free Credit Balances in Customers\' Cash Accounts': 'finra_CC',              # Cash Credit (CC)
+        'Free Credit Balances in Customers\' Securities Margin Accounts': 'finra_CM'  # Margin Credit (CM)
     }
 }
 

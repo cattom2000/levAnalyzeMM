@@ -1,15 +1,21 @@
-from .vulnerability_index import VulnerabilityIndex, get_vulnerability_index
-from .risk_analysis import RiskAnalyzer, get_risk_analyzer
-from .historical_crises import HistoricalCrisisAnalyzer, get_historical_crisis_analyzer
-from .validation import AlgorithmValidator, get_algorithm_validator
+# Services module - Note: The following classes are now in models/:
+# - VulnerabilityIndex: models.indicators.VulnerabilityIndex
+# - MarginDebtCalculator: models.margin_debt_calculator.MarginDebtCalculator
+
+# Import available services from models directory
+from ..models.margin_debt_calculator import MarginDebtCalculator, get_margin_debt_calculator
+from ..models.indicators import (
+    VulnerabilityIndex,
+    MarketIndicators,
+    get_vulnerability_index,
+    get_market_indicators
+)
 
 __all__ = [
+    'MarginDebtCalculator',
+    'get_margin_debt_calculator',
     'VulnerabilityIndex',
+    'MarketIndicators',
     'get_vulnerability_index',
-    'RiskAnalyzer',
-    'get_risk_analyzer',
-    'HistoricalCrisisAnalyzer',
-    'get_historical_crisis_analyzer',
-    'AlgorithmValidator',
-    'get_algorithm_validator'
+    'get_market_indicators'
 ]

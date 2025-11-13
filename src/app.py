@@ -33,10 +33,11 @@ except ImportError as e:
 # Import our custom modules
 try:
     from models.margin_debt_calculator import MarginDebtCalculator
-    from services.vulnerability_index import VulnerabilityIndex
-    from services.risk_analysis import RiskAnalyzer
+    from models.indicators import VulnerabilityIndex
+    from models.indicators import MarketIndicators
 except ImportError as e:
     st.error(f"Failed to load calculation modules: {e}")
+    st.stop()
 
 # ============================================================================
 # PAGE CONFIGURATION
@@ -260,7 +261,7 @@ with tab1:
         yaxis_title="Vulnerability Index"
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Secondary Charts Row
     col1, col2 = st.columns(2)
@@ -275,7 +276,7 @@ with tab1:
             labels={'market_leverage': 'Leverage Ratio (%)', 'date': 'Date'}
         )
         fig_leverage.update_layout(height=300)
-        st.plotly_chart(fig_leverage, use_container_width=True)
+        st.plotly_chart(fig_leverage, width='stretch')
 
     with col2:
         st.subheader("💰 Money Supply Ratio")
@@ -287,7 +288,7 @@ with tab1:
             labels={'money_supply_ratio': 'Money Supply Ratio (%)', 'date': 'Date'}
         )
         fig_money.update_layout(height=300)
-        st.plotly_chart(fig_money, use_container_width=True)
+        st.plotly_chart(fig_money, width='stretch')
 
 with tab2:
     st.header("📈 Historical Crisis Analysis")
@@ -319,7 +320,7 @@ with tab2:
         st.subheader("Historical Crisis Periods")
         st.dataframe(
             crisis_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -334,7 +335,7 @@ with tab2:
             color_continuous_scale='Reds'
         )
         fig_crisis.update_layout(height=300)
-        st.plotly_chart(fig_crisis, use_container_width=True)
+        st.plotly_chart(fig_crisis, width='stretch')
 
     st.markdown("---")
 
@@ -363,7 +364,7 @@ with tab2:
         showlegend=False
     )
 
-    st.plotly_chart(fig_timeline, use_container_width=True)
+    st.plotly_chart(fig_timeline, width='stretch')
 
 with tab3:
     st.header("⚠️ Current Risk Assessment")
@@ -438,7 +439,7 @@ with tab3:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, width='stretch')
 
     with col2:
         st.subheader("Risk Recommendations")

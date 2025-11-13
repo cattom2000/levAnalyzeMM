@@ -272,3 +272,25 @@ class MarketIndicators:
             indicators['leverage_trend'] = data['margin_debt'].rolling(12).mean()
 
         return indicators
+
+
+# ==================== 便捷函数 ====================
+
+def get_vulnerability_index() -> VulnerabilityIndex:
+    """
+    获取VulnerabilityIndex实例的便捷函数
+
+    Returns:
+        VulnerabilityIndex实例
+    """
+    return VulnerabilityIndex()
+
+
+def get_market_indicators() -> MarketIndicators:
+    """
+    获取MarketIndicators实例的便捷函数
+
+    Returns:
+        MarketIndicators实例
+    """
+    return MarketIndicators()

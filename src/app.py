@@ -30,15 +30,24 @@ except ImportError as e:
     st.error(f"Failed to load configuration: {e}")
     st.stop()
 
-# Import our custom modules
-try:
-    from models.margin_debt_calculator import MarginDebtCalculator
-    from models.indicators import VulnerabilityIndex
-    from models.indicators import MarketIndicators
-    from data.fetcher import DataFetcher
-except ImportError as e:
-    st.error(f"Failed to load calculation modules: {e}")
-    st.stop()
+# Import our custom modules (lazy loading)
+@st.cache_resource
+def load_modules():
+    """Lazy load expensive modules"""
+    try:
+        from models.margin_debt_calculator import MarginDebtCalculator
+        from models.indicators import VulnerabilityIndex
+        from models.indicators import MarketIndicators
+        from data.fetcher import DataFetcher
+        return {
+            'MarginDebtCalculator': MarginDebtCalculator,
+            'VulnerabilityIndex': VulnerabilityIndex,
+            'MarketIndicators': MarketIndicators,
+            'DataFetcher': DataFetcher
+        }
+    except ImportError as e:
+        st.error(f"Failed to load calculation modules: {e}")
+        return None
 
 # Initialize session state for data loading
 if 'data_loading' not in st.session_state:
@@ -53,6 +62,8 @@ if 'performance_stats' not in st.session_state:
         'render_time': 0,
         'cache_hits': 0
     }
+if 'loaded_modules' not in st.session_state:
+    st.session_state.loaded_modules = None
 
 # ============================================================================
 # ERROR HANDLING AND PERFORMANCE MONITORING
@@ -80,7 +91,14 @@ def handle_api_error(func):
 def safe_fetch_data(start_date, end_date):
     """Safely fetch data with error handling"""
     try:
-        fetcher = DataFetcher()
+        # Ensure modules are loaded
+        if st.session_state.loaded_modules is None:
+            st.session_state.loaded_modules = load_modules()
+
+        if not st.session_state.loaded_modules:
+            raise Exception("Failed to load modules")
+
+        fetcher = st.session_state.loaded_modules['DataFetcher']()
         data = fetcher.fetch_complete_market_dataset(
             start_date.strftime('%Y-%m-%d'),
             end_date.strftime('%Y-%m-%d')
@@ -304,10 +322,17 @@ with tab1:
     with col2:
         st.info("🔢 **Calculations**\n- Market Leverage Ratio\n- Money Supply Ratio\n- Interest Cost Analysis")
 
-        # Initialize calculator
+        # Initialize calculator (lazy loaded)
+        if st.session_state.loaded_modules is None:
+            with st.spinner('Loading calculation modules...'):
+                st.session_state.loaded_modules = load_modules()
+
         try:
-            calculator = MarginDebtCalculator()
-            st.success("✅ **Calculator Ready**")
+            if st.session_state.loaded_modules:
+                calculator = st.session_state.loaded_modules['MarginDebtCalculator']()
+                st.success("✅ **Calculator Ready**")
+            else:
+                st.warning("⚠️ **Modules not loaded**")
         except Exception as e:
             st.error(f"❌ **Calculator Error**: {str(e)}")
 
@@ -344,8 +369,11 @@ with tab1:
         with col_load1:
             st.markdown("**Data Source Status:**")
             try:
-                fetcher = DataFetcher()
-                st.success("✅ DataFetcher initialized")
+                if st.session_state.loaded_modules:
+                    fetcher = st.session_state.loaded_modules['DataFetcher']()
+                    st.success("✅ DataFetcher initialized")
+                else:
+                    st.warning("⚠️ Modules not loaded")
             except Exception as e:
                 st.error(f"❌ DataFetcher error: {str(e)}")
 
@@ -492,21 +520,31 @@ with tab1:
 
     np.random.seed(42)
 
+# Cache data generation
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def generate_sample_data(dates_list):
+    """Generate sample market data with caching"""
+    np.random.seed(42)
     # Simulate vulnerability index with some realistic patterns
-    base_trend = np.linspace(0.5, 2.0, len(dates))
-    cyclical = 0.5 * np.sin(2 * np.pi * np.arange(len(dates)) / 12)
-    noise = np.random.normal(0, 0.3, len(dates))
+    base_trend = np.linspace(0.5, 2.0, len(dates_list))
+    cyclical = 0.5 * np.sin(2 * np.pi * np.arange(len(dates_list)) / 12)
+    noise = np.random.normal(0, 0.3, len(dates_list))
     vulnerability_index = base_trend + cyclical + noise
 
     # Cap the values to reasonable range
     vulnerability_index = np.clip(vulnerability_index, -3, 3)
 
     df_sample = pd.DataFrame({
-        'date': dates,
+        'date': dates_list,
         'vulnerability_index': vulnerability_index,
-        'market_leverage': 0.8 + 0.3 * vulnerability_index + np.random.normal(0, 0.05, len(dates)),
-        'money_supply_ratio': 3.5 + 0.2 * vulnerability_index + np.random.normal(0, 0.1, len(dates))
+        'market_leverage': 0.8 + 0.3 * vulnerability_index + np.random.normal(0, 0.05, len(dates_list)),
+        'money_supply_ratio': 3.5 + 0.2 * vulnerability_index + np.random.normal(0, 0.1, len(dates_list))
     })
+    return df_sample
+
+# Generate data (cached)
+with st.spinner('Loading market data...'):
+    df_sample = generate_sample_data(dates)
 
     # Add data statistics
     st.markdown(f"**Data Points:** {len(df_sample)} records from {dates[0].strftime('%Y-%m')} to {dates[-1].strftime('%Y-%m')}")
@@ -703,15 +741,26 @@ with tab5:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Current Net Worth", f"${investor_net_worth[-1]:.1f}B", f"{investor_net_worth[-1] - investor_net_worth[-2]:.1f}B")
+        if len(investor_net_worth) > 0:
+            current_value = investor_net_worth.iloc[-1] if hasattr(investor_net_worth, 'iloc') else investor_net_worth[-1]
+            delta_value = investor_net_worth.iloc[-1] - investor_net_worth.iloc[-2] if len(investor_net_worth) > 1 else 0
+            st.metric("Current Net Worth", f"${current_value:.1f}B", f"{delta_value:.1f}B")
+        else:
+            st.metric("Current Net Worth", "N/A", "No data")
 
     with col2:
-        avg_net_worth = investor_net_worth.mean()
-        st.metric("Average Net Worth", f"${avg_net_worth:.1f}B")
+        if len(investor_net_worth) > 0:
+            avg_net_worth = investor_net_worth.mean()
+            st.metric("Average Net Worth", f"${avg_net_worth:.1f}B")
+        else:
+            st.metric("Average Net Worth", "N/A", "No data")
 
     with col3:
-        max_net_worth = investor_net_worth.max()
-        st.metric("Peak Net Worth", f"${max_net_worth:.1f}B")
+        if len(investor_net_worth) > 0:
+            max_net_worth = investor_net_worth.max()
+            st.metric("Peak Net Worth", f"${max_net_worth:.1f}B")
+        else:
+            st.metric("Peak Net Worth", "N/A", "No data")
 
     st.markdown("---")
 

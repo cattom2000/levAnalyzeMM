@@ -1,15 +1,7 @@
-# Streamlit configuration for performance optimization
+# Streamlit configuration for performance optimization (v1.51.0)
 [server]
-# 启用缓存
-enableCORS = false
-enableXsrfProtection = false
+# 禁用WebSocket压缩以提高性能
 enableWebsocketCompression = false
-
-# 禁用静态文件服务（提高速度）
-enableStaticServing = false
-
-# 浏览器连接超时
-browserConnectionTimeout = 60
 
 # 最大上传大小 (MB)
 maxUploadSize = 50
@@ -27,39 +19,9 @@ address = "0.0.0.0"
 # 禁用使用统计收集
 gatherUsageStats = false
 
-# 服务器度量
-serverAddress = "localhost"
-serverPort = 8502
-
 [logger]
 # 日志级别
 level = "INFO"
-
-# 消息格式
-messageFormat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-[runner]
-# 启用快速数学
-enableFastMath = true
-
-# 启用CORS
-enableCORS = false
-
-# 启用Xsrf
-enableXsrfProtection = false
-
-# 固定魔法命令
-fixedMagicCommands = []
-
-# 缓存大小限制
-cacheSizeBytes = 50000000  # 50MB
-
-# 安装提示
-install提示 = false
-
-[mapbox]
-# 令牌
-token = ""
 
 [theme]
 # 主题配置
@@ -68,3 +30,4 @@ backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f0f2f6"
 textColor = "#262730"
 font = "sans serif"
+

@@ -512,8 +512,17 @@ This tab provides advanced metrics for deeper market analysis.
 
 **Calculation:**
 ```
-Investor Net Worth = Market Capitalization - Margin Debt
+Investor Net Worth = (Cash Balance - Margin Debt) - Market Cushion
+
+Default Formula:
+Investor Net Worth = (0.5 × Margin Debt - Margin Debt) - (0.10 × S&P 500 Market Cap)
+                   = -0.5 × Margin Debt - 0.10 × S&P 500 Market Cap
 ```
+
+**Components:**
+- **Cash Balance**: Estimated as 50% of margin debt (conservative assumption)
+- **Market Cushion**: 10% of S&P 500 market capitalization (safety buffer)
+- **Net Result**: Always negative for leveraged positions (net debt)
 
 **Key Metrics:**
 - **Current Net Worth**: Latest period value with delta
